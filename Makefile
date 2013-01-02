@@ -10,22 +10,21 @@ app:
 clean:
 	@$(REBAR) clean
 
-release: clean-release app
-	@$(REBAR) generate
-	mv rel1/elevators/releases/1/elevators.boot rel1/elevators/releases/1/start.boot
-	ln -s start.boot rel1/elevators/releases/1/elevators.boot
+rel: clean-release app
+	@./relx -o rel1/elevators -c rel1/relx.config
 
 clean-release:
 	rm -rf rel1/elevators rel2/elevators
 
-upgrade: clean release
+upgrade: clean rel
+	mkdir -p rel2/elevators/lib
+	cp -R rel1/elevators/lib/elevators-1.0 rel2/elevators/lib
 	mv src/elevators.app.src src/elevators.app.src.v1
 	mv src/scheduler.erl src/scheduler.erl.v1
 	cp upgrade/elevators.app.src src/
 	cp upgrade/scheduler.erl src/
-	@$(REBARUP) compile generate
-	cp upgrade/elevators.appup rel2/elevators/lib/elevators-1.1/ebin/
-	@$(REBARUP) generate-upgrade previous_release=../rel1/elevators
-	mv rel2/elevators_2.tar.gz rel1/elevators/releases/
+	@$(REBAR) compile
+	cp upgrade/elevators.appup ./ebin/
+	@./relx -o rel2/elevators -c rel2/relx.config -l rel1 release relup
 	mv src/elevators.app.src.v1 src/elevators.app.src
 	mv src/scheduler.erl.v1 src/scheduler.erl

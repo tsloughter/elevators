@@ -21,18 +21,17 @@ fi
 SCRIPT=`basename $0`
 
 # Parse out release and erts info
-START_ERL=`cat $RUNNER_BASE_DIR/releases/start_erl.data`
-ERTS_VSN=${START_ERL% *}
-APP_VSN=${START_ERL#* }
+ERTS_VSN={{erts_vsn}}
+REL_VSN={{rel_vsn}}
 
-# Use $CWD/vm.args if exists, otherwise releases/APP_VSN/vm.args, or else etc/vm.args
+# Use $CWD/vm.args if exists, otherwise releases/{{release_name}}-REL_VSN/vm.args, or else etc/vm.args
 if [ -e "$CALLER_DIR/vm.args" ]; then
     VMARGS_PATH=$CALLER_DIR/vm.args
     USE_DIR=$CALLER_DIR
 else
     USE_DIR=$RUNNER_BASE_DIR
-    if [ -e "$RUNNER_BASE_DIR/releases/$APP_VSN/vm.args" ]; then
-        VMARGS_PATH="$RUNNER_BASE_DIR/releases/$APP_VSN/vm.args"
+    if [ -e "$RUNNER_BASE_DIR/releases/{{release_name}}-$REL_VSN/vm.args" ]; then
+        VMARGS_PATH="$RUNNER_BASE_DIR/releases/{{release_name}}-$REL_VSN/vm.args"
     else
         VMARGS_PATH="$RUNNER_ETC_DIR/vm.args"
     fi
@@ -46,8 +45,8 @@ mkdir -p $RUNNER_LOG_DIR
 if [ -e "$USE_DIR/sys.config" ]; then
     CONFIG_PATH="$USE_DIR/sys.config"
 else
-    if [ -e "$RUNNER_BASE_DIR/releases/$APP_VSN/sys.config" ]; then
-        CONFIG_PATH="$RUNNER_BASE_DIR/releases/$APP_VSN/sys.config"
+    if [ -e "$RUNNER_BASE_DIR/releases/$REL_VSN/sys.config" ]; then
+        CONFIG_PATH="$RUNNER_BASE_DIR/releases/$REL_VSN/sys.config"
     else
         CONFIG_PATH="$RUNNER_ETC_DIR/app.config"
     fi
@@ -223,13 +222,12 @@ case "$1" in
         $ERTS_PATH/escript $RUNNER_BASE_DIR/bin/install_upgrade.escript $node_name $erlang_cookie $2
         ;;
 
-    console|console_clean|console_boot)
+    console|console_boot)
         # .boot file typically just $SCRIPT (ie, the app name)
         # however, for debugging, sometimes start_clean.boot is useful.
         # For e.g. 'setup', one may even want to name another boot script.
         case "$1" in
             console)        BOOTFILE=$SCRIPT ;;
-            console_clean)  BOOTFILE=start_clean ;;
             console_boot)
                 shift
                 BOOTFILE="$1"
@@ -241,7 +239,7 @@ case "$1" in
         BINDIR=$ROOTDIR/erts-$ERTS_VSN/bin
         EMU=beam
         PROGNAME=`echo $0 | sed 's/.*\\///'`
-        CMD="$BINDIR/erlexec -boot $RUNNER_BASE_DIR/releases/$APP_VSN/$BOOTFILE -config $CONFIG_PATH -args_file $VMARGS_PATH"
+        CMD="$BINDIR/erlexec -boot $RUNNER_BASE_DIR/releases/$REL_VSN/$BOOTFILE -mode embedded -config $CONFIG_PATH -args_file $VMARGS_PATH"
         export EMU
         export ROOTDIR
         export BINDIR
@@ -270,7 +268,7 @@ case "$1" in
         BINDIR=$ROOTDIR/erts-$ERTS_VSN/bin
         EMU=beam
         PROGNAME=`echo $0 | sed 's/.*\///'`
-        CMD="$BINDIR/erlexec $FOREGROUNDOPTIONS -boot $RUNNER_BASE_DIR/releases/$APP_VSN/$BOOTFILE -config $CONFIG_PATH -args_file $VMARGS_PATH"
+        CMD="$BINDIR/erlexec $FOREGROUNDOPTIONS -boot $RUNNER_BASE_DIR/releases/$REL_VSN/$BOOTFILE -config $CONFIG_PATH -args_file $VMARGS_PATH"
         export EMU
         export ROOTDIR
         export BINDIR
